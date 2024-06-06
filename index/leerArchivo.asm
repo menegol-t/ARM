@@ -5,21 +5,24 @@
 .text
         leerPalabrasTxt:
                 .fnstart
-                        @push {lr}
                         mov r7, #5
                         ldr r0, =palabrasTxt
-                        mov r1, #0
+                        mov r1, #0                      @Abre el archivo palabras.txt
                         mov r2, #438
                         swi 0
 
-                        cmp r0, #0
+                        cmp r0, #0                      @Comprueba si hubo error abriendo el archivo, cuyo caso imprime el error y sale del programa
                         blt errorAbrirArchivo
 
-                        mov r6, r0
+                        mov r6, r0                      @Se copia el id del archivo a r6
 
                         mov r7, #3
-                        ldr r1, =palabrasTxtEnMemoria
+                        ldr r1, =palabrasTxtEnMemoria   @Se lee el archivo y sus contenidos se escriben en memoria
                         mov r2, #56
+                        swi 0
+
+                        mov r0, r6                      @Cierra el archvo
+                        mov r7, #6
                         swi 0
 
                         bx lr
@@ -34,10 +37,10 @@
 
 .global main
 main:
-        bl leerPalabrasTxt
+        bl leerPalabrasTxt                      @Vuelca los contenidos del archivo en memoria
         mov r2, #56
         ldr r1, =palabrasTxtEnMemoria
-        bl printR1LengthR2
+        bl printR1LengthR2                      @Printea sus contenidos en pantalla
         bal fin
 
 errorAbrirArchivo:
