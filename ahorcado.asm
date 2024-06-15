@@ -343,8 +343,12 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 
 .text
         /*SUBRUTINAS*/
-        actualizarRanking:      /*Agarra lo que hay en ranking.txt, elimina la primera palabra (o sea, borra todo hasta el primer enter).
-                                A partir de ahi, copia la segunda y la tercera palabra en el nuevoRanking, y por ultimo añade el nuevo nombre  al final de nuevoRanking. */
+        actualizarRanking:      /*Agarra lo que hay en diccionarioDeNombres, elimina la primera palabra (o sea, borra todo hasta el primer enter).
+                                A partir de ahi, copia la segunda y la tercera palabra en el nuevoRanking, y por ultimo añade el nombreJugador
+                                al final de nuevoRanking.
+
+                                -Recibe: diccionarioDeNombres, nuevoRanking, nombreJugador
+                                -Devuelve: nuevoRanking (actualiado)*/
         .fnstart
                 push {r6}
                 ldr r0, =diccionarioDeNombres
@@ -387,7 +391,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 concatenarUltimoJugador:
                 strb r2, [r4, r5]               @ R2: Añade un enter antes de comenzar a poner el nuevo nombre en el nuevoRanking
                 add r5, #1
-                ldr r0, =nombreJugador            @ R0: Nombre a añadir al final del ranking
+                ldr r0, =nombreJugador          @ R0: Nombre a añadir al final del ranking
                 concatenarNuevoNombre:
                 ldrb r2, [r0, r6]               @ Empiezo a cargar las letras del nuevoNombre en el nuevoRanking
                 cmp r2, #00                     @ Si la letra actual es 00, llegué al final del nuevo nombre, salgo, nuevoRanking quedó actualizado
@@ -404,7 +408,10 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
         .fnend
 
 
-        actualizarRankingTxt:           /* Abre rankingTxt y reemplaa su contenido por el de nuevoRanking, que elimina el nombre mas viejo y añade el nombre del ultimo jugador. */
+        actualizarRankingTxt:   /* Abre rankingTxt y reemplaa su contenido por el de nuevoRanking, que elimina el nombre mas viejo y
+                                 añade el nombreJugador (el ultimo jugador)
+                                -Llama a subrutina: actualizarRanking
+                                */
         .fnstart
                 mov r7, #5
                 ldr r0, =rankingTxt             @ Abre el archivo ranking.txt
@@ -444,7 +451,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 bx lr
         .fnend
 
-        cargarPalabrasTxt:              /*Carga el listado completo de palabras en memoria */
+        cargarPalabrasTxt:  /*Carga el listado completo de palabras en diccionarioPalabras*/
                 .fnstart
                         mov r7, #5
                         ldr r0, =palabrasTxt
@@ -469,7 +476,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        cargarTopTxt:                   /*Carga el ranking para mostrarlo por priemra vez en pantalla */
+        cargarTopTxt:       /*Lee ranking.txt y lo guarda en topJugadores para mostrarlo por primera vez en pantalla */
                 .fnstart
                         mov r7, #5
                         ldr r0, =topTxt
@@ -495,34 +502,29 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 .fnend
 
 
-        seleccionarPalabraAleatoria:    /* Busca en diccionarioDePalabras la palabra que esté en la posición dictada por un número random. Por ejemplo, si el número es 0, devu*/
+        seleccionarPalabra: /* Busca en diccionarioDePalabras la palabra que esté en la posición dictada por un número random. Por ejemplo, si el número es 0, devu*/
                 .fnstart
-                        ldr r0, =numeroQueSeriaRandom  @Dado este numero
-                        ldrb r1,[r0]                   @ R1: Tengo el número de 0 a F, en este caso, 5.
+                        ldr r0, =numeroQueSeriaRandom   @Dado este numero
+                        ldrb r1,[r0]                    @ R1: Tengo el número de 0 a F, en este caso, 5.
                         ldr r0, =diccionarioPalabras
-                        mov r2, #0                     @ R2: Offset para las letras del diccionario
-                        mov r5, #0                     @ R5: Contador de enter
+                        mov r2, #0                      @ R2: Offset para las letras del diccionario
+                        mov r5, #0                      @ R5: Contador de enter
                         ciclo:
-                        ldrb r3, [r0, r2]              @ R3: Cargo letra por letra el diccionario de palabras
-                        cmp r3,#0x0a                   @ Si la letra actual es el ascii del 'LineFeed' (enter), llegué al final de la palabra actual.
-                        beq enter
-                        cmp r3,#0x00
-                        beq finpalabra
-                        /*Si no es enter sigo*/
-                        add r2,#1                       @incremento r2 para el offset
-                        bal ciclo
+                                ldrb r3, [r0, r2]       @ R3: Cargo letra por letra el diccionario de palabras
+                                cmp r3,#0x0a            @ Si la letra actual es el ascii del 'LineFeed' (enter), llegué al final de la palabra actual.
+                                beq enter
+                                cmp r3,#0x00
+                                beq finpalabra
+                                add r2,#1               @incremento r2 para el offset
+                                bal ciclo
                         enter:
-                        add r2,#1
-                        add r5,#1
-                        cmp r5,r1                      @ Comparo si estoy parado en la palabra que quiero
-                        beq palabraEncontrada           @ Si son iguales, encontré una palabra con la posición que me pidieron.
-
-                        @add r2, #1                      @ Aumento el offset del diccionario de palabras para agarrar la siguiente letra
-                        bal ciclo
-
-                palabraEncontrada:
-                        /*Si estoy parado aqui, es que llegue a la palabra que queria*/
-                        mov r5,#0                               @R5, en esta parte usamos r5 para el offset de palabra original
+                                add r2,#1
+                                add r5,#1
+                                cmp r5,r1               @ Comparo si estoy parado en la palabra que quiero
+                                beq palabraEncontrada   @ Si son iguales, encontré una palabra con la posición que me pidieron.
+                                bal ciclo               @ Caso contrario, repito el ciclo
+                        palabraEncontrada:              @Si estoy parado aqui, es que llegue a la palabra que queria
+                        mov r5,#0                       @R5, en esta parte usamos r5 para el offset de palabra original
                         ldr r4,=palabraOriginal
                         ciclograbar:
                                 ldrb r3,[r0,r2]
@@ -539,7 +541,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        myrand:                         /* Se basa en la Seed para generar un número pseudo random y lo guarda en 'poneleQueRandom'. Guarda parte del resultado en la seed para$*/
+        myrand:             /* Se basa en la Seed para generar un número pseudo random y lo guarda en 'poneleQueRandom'. Guarda parte del resultado en la seed para$*/
                 .fnstart
                         push {lr}
                         ldr r1, =seed
@@ -565,8 +567,8 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 
 
         verificarPalabraCorrecta:
-                /*Si puedo recorrer toda la palabra sin que me encuentre con arrobas, quiere decir que el  usuario acerto todas las letras de la palabra*/
-                /*dado que la subrutina verificarLetra se encarga de verificarlas una por una*/
+                /*Si puedo recorrer toda la palabra sin que me encuentre con arrobas, quiere decir que el  usuario acerto todas las letras de la palabra
+                dado que la subrutina verificarLetra se encarga de verificarlas una por una*/
                 .fnstart
                         push {r0}
                         push {r1}
@@ -592,8 +594,8 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        cargarTop:
-                .fnstart                                        @Previamente se deben obtener de memor
+        cargarTop:      /*Carga el ranking de los jugadores en la pantalla*/
+                .fnstart
                         push {r0}
                         push {r1}
                         push {r4}
@@ -632,7 +634,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        limpiarbasuratop:
+        limpiarbasuratop:       /*Limpia lo que tiene escrito la pantalla con el ranking de los jugadores, y escribe el ranking mas actualizado de memoria. */
                 .fnstart
                         push {r0}
                         push {r1}
@@ -643,7 +645,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         mov r4,#0                               @iterador
                         mov r5,#0
                         ciclobasura:
-                                cmp r5,#60                       @Final de limpieza
+                                cmp r5,#60                      @Final de limpieza
                                 beq finlimpieza
 
                                 cmp r4,#20                      @Termina la limpieza de la linea
@@ -669,7 +671,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        verificarDisparo:               /*Se retorna R8=1 si disparo correcto o R8=0 si disparo fallo*/
+        verificarDisparo:   /*Retorna R8 = 1 si disparo correcto do en el objetivo.  R8 = 0 si disparo fallo*/
                 .fnstart
                         push {r0}                       @Salvamos el valor de los registros por si se estaban usando
                         push {r1}
@@ -722,7 +724,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr                   @Devuelvo los registros como estaban antes de salir, por si acaso.
                 .fnend
 
-        modificarPalabraCensurada:                      /*Va 'des-censurando' la palabra censurada, si la letra en 'input' es igual a alguna letra de la palabra por adivinar.*/
+        modificarPalabraCensurada:  /*Va 'des-censurando' la palabra censurada, si la letra en 'input' es igual a alguna letra de la palabra por adivinar.*/
                 .fnstart
                         push {r0}
                         push {r1}
@@ -759,7 +761,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        descontarPuntajeMemoria:                        /*Resta 1 a puntajeString en memoria*/
+        descontarPuntajeMemoria:  /*Resta 1 a puntajeString en memoria*/
                 .fnstart
                         push {r0}
                         push {r1}
@@ -774,7 +776,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarCaracter:                               /*Toma un input y lo guarda en input, usado para la letra que mete el usuario */
+        ingresarCaracter:        /*Hace syscall para tomar un input y lo guarda en input, usado para la letra que mete el usuario */
                 .fnstart
                         push {r7}
                         push {r0}
@@ -794,7 +796,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarCoordenadaX:                            /*Toma un input y lo guarda en coordenadaX*/
+        ingresarCoordenadaX:     /*Hace syscall para tomar un input y lo guarda en coordenadaX*/
                 .fnstart
                         push {r7}
                         push {r0}
@@ -814,7 +816,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarCoordenadaY:                            /*Toma un input y lo guarda en coordenadaY*/
+        ingresarCoordenadaY:     /*Hace la syscall para tomar un input y lo guarda en coordenadaY*/
                 .fnstart
                         push {r7}
                         push {r0}
@@ -834,7 +836,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarNombre:                                 /*Toma un input y guarda el nombre en nombreJugador*/
+        ingresarNombre:          /*Hace la syscall para tomar un input y guarda el nombre en nombreJugador*/
                 .fnstart
                         push {r7}
                         push {r0}
@@ -854,7 +856,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        verificarNombreValido:                          /* Solo verifica que lo que ingreso el usuario no sea completamente vacio*/
+        verificarNombreValido:    /* Solo verifica que lo que ingreso el usuario como nombreJugador en la funcion de arriba no sea completamente vacio*/
                 .fnstart
 
                         push {r0}
@@ -883,7 +885,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         push {r1}
 
                         ldr r0,=input
-                ldrb r1,[r0]                    @R1: caracter ingresado por el usuario
+                        ldrb r1,[r0]                    @R1: caracter ingresado por el usuario
                         cmp r1,#'x'
                         bne finjuego                    @Si no es x, se sale del juego
 
@@ -892,7 +894,8 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        letraContenidaEnPalabra:                        /*Si la letra se encuentra en la palabra, R8 = true*/
+        letraContenidaEnPalabra:                        /*Retorna R8 = 1 si la letra que ingreso el usuario se encuentra en la palabra. Caso contrario
+                                                        Retorna R8 = 0*/
                 .fnstart
                         mov r4,#0                       @Contador
                         ldr r0,=input
@@ -1007,7 +1010,9 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        imprimirPantallaGenerico:                       /*ATENCION: Toma como parametro en R2 la longitud y en R1 la direccion de memoria antes de llamar a esta subrutina*/
+        imprimirPantallaGenerico:               /*Imprime lo que sea que se le pase como parametros.
+                                                PARAMETROS: R2 la longitud de una palabra a impirmir
+                                                R1 la direccion de memoria de la palabra a imprimir*/
                 .fnstart
                         push {r7}
                         push {r0}
@@ -1021,7 +1026,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaInicio:
+        mostrarPantallaInicio:  /*Imprime la pantalla de inicio, llama a la funcion para imprimir pantallas generica*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1037,7 +1042,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaTop:
+        mostrarPantallaTop:     /*Llama a la funcion para imprimir pantallas generica, mprime la pantalla con el ranking al comienzo del juego*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1053,7 +1058,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaNombre:
+        mostrarPantallaNombre:  /*Muestra la pantalla que solicita el nombre al usuario*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1069,7 +1074,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPrimerPantalla:
+        mostrarPrimerPantalla:  /*Imprime primera pantalla del juego, con la horca vacia y la parte donde se solicita una letra al usuario*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1088,7 +1093,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarSegundaPantalla:
+        mostrarSegundaPantalla: /*Imprime la siguiente pantalla, con la cabeza del ahorcado*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1107,7 +1112,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarTercerPantalla:
+        mostrarTercerPantalla: /*Imprime la siguiente pantalla con el torso del ahorcado */
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1126,7 +1131,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarCuartaPantalla:
+        mostrarCuartaPantalla:/*Imprime la siguiente pantalla con un brazo del ahorcado*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1145,7 +1150,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarQuintaPantalla:
+        mostrarQuintaPantalla:/*Imprime la siguiente pantalla con los dos brazos del ahorcado*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1164,7 +1169,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarSextaPantalla:
+        mostrarSextaPantalla:/*Imprime la siguiente pantalla con casi todo el ahorcado excepto una pierna*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1183,7 +1188,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarSeptimaPantalla:
+        mostrarSeptimaPantalla:/*Muestra el ahorcado terminado, y el footer que indica que todavia hay una oportunidad extra (el disparo)*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1202,7 +1207,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaSegundaParte1:
+        mostrarPantallaSegundaParte1:/*Continua mostrando el ahorcado pero ahora con un footer que solicita la cordenada X de la soga*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1221,7 +1226,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaSegundaParte2:
+        mostrarPantallaSegundaParte2:/*Misma funcion que arriba pero con la coordenada Y*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1240,7 +1245,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarDisparoCorrecto:
+        mostrarDisparoCorrecto:/*muestra un footer que indica "disparo acertado" y el ahorcado sin la horca*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1259,7 +1264,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarDisparoFallido:
+        mostrarDisparoFallido:/*Muestra el ahorcado muerto y el footer que indca que se fallo el disparo*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1278,7 +1283,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarDespedida:
+        mostrarDespedida:/*Muestra la pantalla de despedida*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1286,7 +1291,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 
                         mov r2,#1885
                         ldr r1,=pantallaDespedida
-                        bl imprimirPantallaGenerico             @Al llamar esta subrutina, previamente se debe cargar r2 y r1 con la direccion de memoria y la longitud
+                        bl imprimirPantallaGenerico
 
                         pop {lr}
                         pop {r1}
@@ -1294,7 +1299,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaPalabraCorrecta:
+        mostrarPantallaPalabraCorrecta:/*Muestra la pantalla de que se gano la partida, con el ahorcado sin la horca, y pregunta al usuario si desea continuar*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1313,32 +1318,43 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
+        cargarPuntaje:/*Setea el puntaje en memoria como el ASCII del numero 6 para mostrarlo en pantalla y para llevar la cuenta de los puntos */
+                .fnstart
+                        push {r0}
 
+                        ldr r0, =puntajestring
+                        mov r1, #0x36
+                        strb r1, [r0]
 
+                        pop {r0}
+                        bx lr
+                .fnend
 .global main
         main:
                 bl cargarPalabrasTxt                            @Carga las palabras por adivinar deltxt a memoria
                 bl cargarTopTxt                                 @Carga los nombres del ranking.txt en memoria
-                mainjuego:
-                mov r0,#42                                      @R0: 42 porque es usado como input para myrand
-                bl myrand                                       @Genera un numero semialeatorio y lo guarda en memoria
-                bl seleccionarPalabraAleatoria                  @Utiliza el numero mencionado para elegir una palabra al azar
-
                 bl limpiarbasuratop                             @Limpia la pantalla del top para la partida que esta por comenzar
                 bl cargarTop                                    @Carga los datos para la partida que esta por comenzar
-                bl censurarPalabra                              @Se agarra la palabra original y se genera una copia censurada en palabraCensurada
-                bl actualizarPalabraCensurada                   @Actualiza la pantalla con la palabra censurada
-                bl actualizarPuntaje                            @Actualiza la pantalla con el puntaje
-                bl mostrarPantallaInicio
 
+                bl mostrarPantallaInicio
                 bl ingresarCaracter                             @Solicita al usuario una letra
                 bl verificarQueSeaX                             @Verifico que lo que ingreso el usuario sea la letra x para continuar, sino finaliza el juego.
+
                 bl mostrarPantallaTop                           @Muestra los ultimos 3 jugadores
                 bl ingresarCaracter                             @Nuevamente se solicita al usuario que ingrese x para continuar
                 bl verificarQueSeaX
+
                 bl mostrarPantallaNombre                        @Muestro el ranking de los jugadores
                 bl ingresarNombre                               @Pido al usuario que ponga su nombre
                 bl verificarNombreValido                        @Verificar que el usuario no ponga su nombre vacio.
+                mainjuego:
+                bl cargarPuntaje
+                @mov r0,#42
+                bl myrand
+                bl seleccionarPalabra
+                bl censurarPalabra
+                bl actualizarPalabraCensurada
+                bl actualizarPuntaje
                 mov r5,#0                                       @R5: Vamos a utilizar r5 como contador de intentos fallidos
                 ciclojuego:
                         mov r8,#0                               @R8: 0 === False        R7: 1=== True
