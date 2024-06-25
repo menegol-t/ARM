@@ -97,11 +97,11 @@
                         .asciz "|                       Bienvenido al juego del ahorcado                       |\n"
                         .asciz "|                                                                              |\n"
                         .asciz "|                                                                              |\n"
-                        .asciz "|                   Los puntajes de los ultimos 3 jugadores:                   |\n"
+                        .asciz "|                            Ultimos 3 jugadores:                              |\n"
                         .asciz "|                                                                              |\n"
-                        .asciz "|                                # Alan:4                                      |\n"
-                        .asciz "|                                # Tomas:5                                     |\n"
-                        .asciz "|                                # Mariano:0                                   |\n"
+                        .asciz "|                                #                                             |\n"
+                        .asciz "|                                #                                             |\n"
+                        .asciz "|                                #                                             |\n"
                         .asciz "|                                                                              |\n"
                         .asciz "|                     Presiona la tecla x para continuar                       |\n"
                         .asciz "|                                     o                                        |\n"
@@ -342,13 +342,19 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 
 
 .text
-        /*SUBRUTINAS*/
-        actualizarRanking:      /*Agarra lo que hay en diccionarioDeNombres, elimina la primera palabra (o sea, borra todo hasta el primer enter).
-                                A partir de ahi, copia la segunda y la tercera palabra en el nuevoRanking, y por ultimo añade el nombreJugador
-                                al final de nuevoRanking.
+/*Aqui comienza la definicion de SUBRUTINAS*/
 
-                                -Recibe: diccionarioDeNombres, nuevoRanking, nombreJugador
-                                -Devuelve: nuevoRanking (actualiado)*/
+
+/*      -> ActualizarRanking(){}                                                                                                |
+|                                                                                                                               |
+|       Agarra lo que hay en diccionarioDeNombres, elimina la primera palabra (o sea, borra todo hasta el primer enter).        |
+|       A partir de ahi, copia la segunda y la tercera palabra en el nuevoRanking, y por ultimo añade el nombreJugado           |
+|       al final de nuevoRanking.                                                                                               |
+|                                                                                                                               |
+|       -Recibe: diccionarioDeNombres, nuevoRanking, nombreJugador                                                              |
+|       -Devuelve: nuevoRanking (actualiado)                                                                                    |
+|                                                                                                                               */
+        actualizarRanking:
         .fnstart
                 push {r6}
                 ldr r0, =diccionarioDeNombres
@@ -408,10 +414,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
         .fnend
 
 
-        actualizarRankingTxt:   /* Abre rankingTxt y reemplaa su contenido por el de nuevoRanking, que elimina el nombre mas viejo y
-                                 añade el nombreJugador (el ultimo jugador)
-                                -Llama a subrutina: actualizarRanking
-                                */
+/*      ->actualizarRankingTxt(){}                                                                                              |
+|                                                                                                                               |
+|        Abre rankingTxt y reemplaa su contenido por el de nuevoRanking, que elimina el nombre mas viejo y                      |
+|        añade el nombreJugador (el ultimo jugador)                                                                             |
+|                                                                                                                               |
+|               -Llama a subrutina: actualizarRanking                                                                           |
+|                                                                                                                               */
+        actualizarRankingTxt:
         .fnstart
                 mov r7, #5
                 ldr r0, =rankingTxt             @ Abre el archivo ranking.txt
@@ -451,7 +461,13 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 bx lr
         .fnend
 
-        cargarPalabrasTxt:  /*Carga el listado completo de palabras en diccionarioPalabras*/
+
+/*      ->cargarPalabrasTxt(){}                                                                                                 |
+|                                                                                                                               |
+|       Obtiene en memoria el diccionario de palabras que se encuentran almacenado en un archivo.                               |
+|       Almacena las palabras en memoria bajo la etiqueta diccionarioPalabras                                                   |
+|                                                                                                                               */
+        cargarPalabrasTxt:
                 .fnstart
                         mov r7, #5
                         ldr r0, =palabrasTxt
@@ -476,7 +492,13 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        cargarTopTxt:       /*Lee ranking.txt y lo guarda en topJugadores para mostrarlo por primera vez en pantalla */
+
+/*      ->cargarTopTxt(){}                                                                                                      |
+|                                                                                                                               |
+|       Lee el archivo ranking.txt y guarda su contenido en memoria, que son los nombre de los ultimos 3 jugadores              |
+|               -lo almacena en la etiqueta topjugadores                                                                        |
+|                                                                                                                               */
+        cargarTopTxt:
                 .fnstart
                         mov r7, #5
                         ldr r0, =topTxt
@@ -502,7 +524,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 .fnend
 
 
-        seleccionarPalabra: /* Busca en diccionarioDePalabras la palabra que esté en la posición dictada por un número random. Por ejemplo, si el número es 0, devu*/
+/*      ->seleccionarPalabra(){}                                                                                                |
+|                                                                                                                               |
+|       Esta subrutina selecciona una palabra del diccionario de palabras(en memoria), la seleccion la hace dada un numero que  |
+|       se encuentra en memoria tambien.                                                                                        |
+|       Este numero que se utiliza como puntero a la palabra a seleccionar es pseudo random y hay otra subrutina que se encarga |
+|       de seleccionarlo y almacenarlo en memoria.                                                                              |
+|       La palabra seleccionada es escrita en memoria, en la etiqueta palabraOriginal                                           |
+|                                                                                                                               */
+        seleccionarPalabra:
                 .fnstart
                         ldr r0, =numeroQueSeriaRandom   @Dado este numero
                         ldrb r1,[r0]                    @ R1: Tengo el número de 0 a F, en este caso, 5.
@@ -524,22 +554,24 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 beq palabraEncontrada   @ Si son iguales, encontré una palabra con la posición que me pidieron.
                                 bal ciclo               @ Caso contrario, repito el ciclo
                         palabraEncontrada:              @Si estoy parado aqui, es que llegue a la palabra que queria
-                        mov r5,#0                       @R5, en esta parte usamos r5 para el offset de palabra original
-                        ldr r4,=palabraOriginal
-                        ciclograbar:
-                                ldrb r3,[r0,r2]
-                                cmp r3,#0x0a
-                                beq finpalabra
-                                cmp r3,#0x00
-                                beq finpalabra
+                                mov r5,#0                       @R5, en esta parte usamos r5 para el offset de palabra original
+                                ldr r4,=palabraOriginal
+                                ciclograbar:
+                                        ldrb r3,[r0,r2]
+                                        cmp r3,#0x0a
+                                        beq finpalabra
+                                        cmp r3,#0x00
+                                        beq finpalabra
 
-                                strb r3,[r4,r5]
-                                add r2,#1
-                                add r5,#1
-                                bal ciclograbar
+                                        strb r3,[r4,r5]
+                                        add r2,#1
+                                        add r5,#1
+                                        bal ciclograbar
                         finpalabra:
                                 bx lr
                 .fnend
+
+
 
         myrand:             /* Se basa en la Seed para generar un número pseudo random y lo guarda en 'poneleQueRandom'. Guarda parte del resultado en la seed para$*/
                 .fnstart
@@ -565,10 +597,17 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 .fnend
 
 
-
+/*      ->verificarPalabraCorrecta(){}
+|                                                                                                                               |
+|       Esta subrutina se encarga de verificar si la palabra en cuestion fue adivinada o no                                     |
+|       Lo hace verificando si la palabra oculta todavia tiene '@' que es el caracter utilizado para ocultar, si la palabra     |
+|       no contiene dicho caracter quiere decir que el usuario adivino la palabra.                                              |
+|               Retorna por r8 su estado:                                                                                       |
+|                       r8=0 -> palabra NO adivinada (false)                                                                    |
+|                       r8=1 -> palabra SI adivinada (true)                                                                     |
+|               No recibe ningun parametro de entrada.                                                                          |
+|                                                                                                                               */
         verificarPalabraCorrecta:
-                /*Si puedo recorrer toda la palabra sin que me encuentre con arrobas, quiere decir que el  usuario acerto todas las letras de la palabra
-                dado que la subrutina verificarLetra se encarga de verificarlas una por una*/
                 .fnstart
                         push {r0}
                         push {r1}
@@ -593,6 +632,8 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 pop {r0}
                                 bx lr
                 .fnend
+
+
 
         cargarTop:      /*Carga el ranking de los jugadores en la pantalla*/
                 .fnstart
@@ -782,18 +823,53 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         push {r0}
                         push {r1}
                         push {r2}
+                        push {lr}
 
                         mov r7,#3
                         mov r0,#0
                         mov r2,#2                       @Longitud 2, para que el usuario ingrese un caracter + el enter
                         ldr r1,=input                   @Guardamos lo ingresado en 'input'.
                         swi 0
-
+                        /*Antes de salir transformamos  a minuscula*/
+                        bl transformarMinuscula
+                        pop {lr}
                         pop {r2}
                         pop {r1}
                         pop {r0}
                         pop {r7}
                         bx lr
+                .fnend
+
+        transformarMinuscula:
+                .fnstart
+                        push {r0}
+                        push {r1}
+
+                        ldr r0, =input
+                        ldrb r1,[r0,#0]                 @Quiero solo el primer byte porque es el que contiene la letra
+
+                        cmp r1,#0x41                    @A mayuscula, primer letra en la tabla ascii
+                        blt noEsLetra
+
+                        cmp r1,#0x7A                    @z minuscula, ultima letra en la tabla ascii
+                        bgt noEsLetra
+
+                        cmp r1,#0x61                    @a minuscula
+                        bge esMinuscula
+
+                        /*Si llego aca sin saltar es porque se ingreso un caracter en mayuscula*/
+                        add r1,r1,#0x20                 @Transformo lo ingresado a minuscula
+                        strb r1,[r0,#0]                 @Lo guardo
+                        bal fintransformacion
+
+                        noEsLetra:
+                                bal fintransformacion
+                        esMinuscula:
+                                bal fintransformacion
+                        fintransformacion:
+                                pop {r1}
+                                pop {r0}
+                                bx lr
                 .fnend
 
         ingresarCoordenadaX:     /*Hace syscall para tomar un input y lo guarda en coordenadaX*/
@@ -887,11 +963,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         ldr r0,=input
                         ldrb r1,[r0]                    @R1: caracter ingresado por el usuario
                         cmp r1,#'x'
-                        bne finjuego                    @Si no es x, se sale del juego
+                        beq sigojugando                 @Si es x sigue el juego
 
-                        pop {r1}
-                        pop {r0}
-                        bx lr
+                        salgodeljuego:
+                                bal finjuego            @si no ingreso x salgo del juego.
+                        sigojugando:
+                                pop {r1}
+                                pop {r0}
+                                bx lr
                 .fnend
 
         letraContenidaEnPalabra:                        /*Retorna R8 = 1 si la letra que ingreso el usuario se encuentra en la palabra. Caso contrario
@@ -1333,7 +1412,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
         main:
                 bl cargarPalabrasTxt                            @Carga las palabras por adivinar deltxt a memoria
                 bl cargarTopTxt                                 @Carga los nombres del ranking.txt en memoria
-                bl limpiarbasuratop                             @Limpia la pantalla del top para la partida que esta por comenzar
+                @bl limpiarbasuratop                             @Limpia la pantalla del top para la partida que esta por comenzar
                 bl cargarTop                                    @Carga los datos para la partida que esta por comenzar
 
                 bl mostrarPantallaInicio
@@ -1347,6 +1426,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 bl mostrarPantallaNombre                        @Muestro el ranking de los jugadores
                 bl ingresarNombre                               @Pido al usuario que ponga su nombre
                 bl verificarNombreValido                        @Verificar que el usuario no ponga su nombre vacio.
+                bl actualizarRankingTxt                         @Si el usuario sale se guarda su nombre
                 mainjuego:
                 bl cargarPuntaje
                 @mov r0,#42
@@ -1451,7 +1531,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
         ldr r1, =errorAlAbrirArchivo
 
         finjuego:
-                bl actualizarRankingTxt                         @Si el usuario sale se guarda su nombre
+                @bl actualizarRankingTxt                                @Si el usuario sale se guarda su nombre
                 bl mostrarDespedida
                 mov r7,#1
                 swi 0
