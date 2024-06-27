@@ -1,37 +1,32 @@
 .data
-        /*Informacion*/
-        /* num aleatorio */
         seed:                   .word 1
         const1:                 .word 1103515245
         const2:                 .word 12345
         numero:                 .word 0
-        poneleQueRandom:        .byte 0
-        numeroQueSeriaRandom:   .byte 0         @ La funcion myrand me deja aca un numero entre 0 y F
-        /* */
-        palabraOriginal:        .asciz "             "
-        palabraCensurada:       .asciz "             "
-        input:                  .asciz "  "
-        puntajestring:          .asciz "6"
-        nombreJugador:          .asciz "         "
+        numeroRandom:           .byte 0         @ La funcion myrand me deja aca un numero random entre 0 y F
+        listaNumerosYaElegidos: .byte 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0   @ Aqui van a ir los numeros random que ya hemos utilizado, para no repetir
+        posicion:               .byte 0         @ Lo usaremos como 'indice' que indica la ultima posicion que fue grabada en listaNumerosYaElegidos, para poder 'apendear' los siguientes numeros
 
-        coordenadax:            .asciz "   "                                    @Disparo
-        coordenaday:            .asciz "   "                                    @
-        coordenadascuerdax:     .ascii "44","45"
+        palabraOriginal:        .asciz "             "  @ La palabra aleatoriamente elegida, sin censurar, va aca
+        palabraCensurada:       .asciz "             "  @ Aca va una copia de la palabra original pero 'censurada' para mostrarle al usuario por pantalla
+        input:                  .asciz "  "     @ Espacio guardado para el input del usuario
+        puntajestring:          .asciz "6"      @ El puntaje maximo del jugador
+        nombreJugador:          .asciz "         "      @ Aca se guarda el nombre del jugador
+
+        coordenadax:            .asciz "   "    @ Aca el jugador ingresa la cordenada X donde quiere la bala
+        coordenaday:            .asciz "   "    @ Aca el jugador ingresa la cordenada Y donde quiere la bala
+        coordenadascuerdax:     .ascii "44","45"        @ Estas son las cordenadas de acierto en su posicion X e Y
         coordenadascuerday:     .ascii "05","06","07","08","09"
 
         palabrasTxt:            .asciz "palabras.txt"
         topTxt:                 .asciz "ranking.txt"
         errorAlAbrirArchivo:    .ascii "Error al abrir el archivo"
 
-/*      diccionarioPalabras:    .asciz "manolo\norganizacion\nensamblador\ntomaco\nprogramacion\nalfonso\nmariano\ncacas\n"*/
-        diccionarioPalabras:    .zero 300       @Aca guardo la lista de palabras del txt
- /*     topjugadores:           .asciz "#juanito:0#pedrito:13#manolito:3"*/
-        topjugadores:           .zero 300
+        diccionarioPalabras:    .zero 300       @ Aca guardo la lista de palabras del txt
+        topjugadores:           .zero 300       @ Aca guardo la lista del ranking de jugadores que se muestra al usuario al inicio
 
-        /*Escribir ranking nuevo */
-        /* Ranking */
         rankingTxt:             .ascii "ranking.txt"
-        diccionarioDeNombres:   .zero 40         @ Me guardo 40 bits de espacio para los caracteres del ranking, asumo que el ranking es solo de 3 nombres.
+        diccionarioDeNombres:   .zero 40        @ Me guardo 40 bits de espacio para los caracteres del ranking, asumo que el ranking es solo de 3 nombres.
         nuevoRanking:           .zero 40        @ Aquí voy a escribir el ranking actualizado
 
 
@@ -526,16 +521,16 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 
 /*      ->seleccionarPalabra(){}                                                                                                |
 |                                                                                                                               |
-|       Esta subrutina selecciona una palabra del diccionario de palabras(en memoria), la seleccion la hace dada un numero que  |
-|       se encuentra en memoria tambien.                                                                                        |
-|       Este numero que se utiliza como puntero a la palabra a seleccionar es pseudo random y hay otra subrutina que se encarga |
-|       de seleccionarlo y almacenarlo en memoria.                                                                              |
+|       Esta subrutina selecciona una palabra del diccionario de palabras(en memoria), la seleccion la hace dada un numero      |
+|       semirandom que se encuentra en memoria tambien.                                                                         |
+|       Este numero que se utiliza como puntero a la palabra a seleccionar y proviene de myrand, otra subrutina que se encarga  |
+|       de seleccionarlo asegurandose que sea unico (no se haya repetido) lo que resulta en palabras aleatorias sin repetir.    |
 |       La palabra seleccionada es escrita en memoria, en la etiqueta palabraOriginal                                           |
 |                                                                                                                               */
         seleccionarPalabra:
                 .fnstart
-                        ldr r0, =numeroQueSeriaRandom   @Dado este numero
-                        ldrb r1,[r0]                    @ R1: Tengo el número de 0 a F, en este caso, 5.
+                        ldr r0, =numeroRandom           @Dado este numero
+                        ldrb r1,[r0]                    @ R1: Tengo el número de 0 a F.
                         ldr r0, =diccionarioPalabras
                         mov r2, #0                      @ R2: Offset para las letras del diccionario
                         mov r5, #0                      @ R5: Contador de enter
@@ -545,7 +540,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 beq enter
                                 cmp r3,#0x00
                                 beq finpalabra
-                                add r2,#1               @incremento r2 para el offset
+                                add r2,#1               @ Incremento r2 para el offset
                                 bal ciclo
                         enter:
                                 add r2,#1
@@ -553,11 +548,11 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 cmp r5,r1               @ Comparo si estoy parado en la palabra que quiero
                                 beq palabraEncontrada   @ Si son iguales, encontré una palabra con la posición que me pidieron.
                                 bal ciclo               @ Caso contrario, repito el ciclo
-                        palabraEncontrada:              @Si estoy parado aqui, es que llegue a la palabra que queria
-                                mov r5,#0                       @R5, en esta parte usamos r5 para el offset de palabra original
+                        palabraEncontrada:              @ Si estoy parado aqui, es que llegue a la palabra que queria
+                                mov r5,#0               @ R5, en esta parte usamos r5 para el offset de palabra original
                                 ldr r4,=palabraOriginal
                                 ciclograbar:
-                                        ldrb r3,[r0,r2]
+                                        ldrb r3,[r0,r2] @ Guardo la palabra en memoria, a menos que haya llegado a su final (enter o null)
                                         cmp r3,#0x0a
                                         beq finpalabra
                                         cmp r3,#0x00
@@ -571,11 +566,29 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
+/*      ->myrand(){}                                                                                                            |
+|       Selecciona un numero semirandom en base a una seed, const1 y const 2. Este resultado primitivo es muy granade, asi que  |
+|       nos quedamos solo con sus 4 bits menos significativos (porque tenemos en total 16 palabras para adivinar, o sea,        |
+|       requerimos nada mas numeros random entre 0 y 15). Para quedarse con los ultimos 4 bits, hace un AND logico, que deja    |
+|       activados solo los ultimos 4 bits que nos sirven.                                                                       |
+|       Despues, verifica que este numero no haya sido elegido previamente, al compararlo con listaNumerosYaElegidos en memoria.|
+|       Si el numero ya fue elegido, simplemente corremos la funcion otra vez para obtener otro numero random. Si el numero no  |
+|       fue elegido previamente, utilizamos 'posicion' para saber cual es el indice del ultimo numero añadido a la lista,       |
+|       grabamos aqui nuestro numero random, sumamos 1 a 'posicion', y ponemos nuestro numero final en numeroRandom para usarse.|
+|       Si ya elegimos todos los numeros posibles entre el 0 y 15, la funcion corta el juego pues ya no hay mas palabras que    |
+|       adivinar, el usuario gano.                                                                                              */
 
+        myrand:
+        .fnstart
+                push {lr}
+                push {r0}
+                push {r1}
+                push {r2}
+                push {r3}
+                push {r4}
 
-        myrand:             /* Se basa en la Seed para generar un número pseudo random y lo guarda en 'poneleQueRandom'. Guarda parte del resultado en la seed para$*/
-                .fnstart
-                        push {lr}
+                numeroYaFueUsado:
+                        mov r4, #0
                         ldr r1, =seed
                         ldr r0, [r1]                    @ R0: Semilla
                         ldr r2, =const1
@@ -587,14 +600,43 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         str r0, [r1]                    @ Guarda el resultado para utilizarlo como input para la siguiente operación 'seed'
 
                         LSL r0, #1
-                        LSR r0, #17
-                        and r0, r0, #0xF                @Desactiva todos los bits con un and logico, excepto los 4 menos significativos. De este modo, nos quedamos con los ulimos 4 bits aletorios (un num entr 0 y F)
-                        ldr r1, =numeroQueSeriaRandom
-                        strb r0, [r1]                   @Guardo el numero de 4 bits random en memoria
+                        LSR r0, #17                     @ R0: El numero random
+                        and r0, r0, #0xF                @ Nos quedamos solo con los ultimos 4 bits del numero random (solo neceistamos 4 bits para un numero entre 0 y 15)
 
-                        pop {lr}
-                        bx lr
-                .fnend
+                        ldr r1, =listaNumerosYaElegidos
+                cicloVerificar:
+                        ldrb r2, [r1, r4]               @ Vamos recorriendo la lista de todos los numeros que ya fueron elegidos
+                        cmp r2, r0                      @ Si el numero ya fue usado, se llama a si misma de vuelta y busca otro numero random
+                        beq numeroYaFueUsado            @ Si nuestro numero semirandom coincide con uno de la lista, pedimos otro random
+
+                        add r4, #1                      @ Si nuestro numero no coincide con el de esta posicion en la lista, me fijo si coincide con el siguiente numero de la lista
+                        cmp r4, #0x10                   @ Verifico que no este parado en el ultimo numero de la lista, que como tenemos solo 16 palabras, tenemos solo 16 numeros aleatorios posibles
+                        bne cicloVerificar              @ Itero sobre todos los numeros de la lista a menos que ya este en el ultimo
+
+                        ldr r1, =numeroRandom           @ Si ya verificamos la lista y el numero no salto, guardamos el numero random para ser utilizado
+                        strb r0, [r1]
+
+                        ldr r1, =posicion               @ Buscamos cual fue el ultimo 'indice' sobre el que se escribio en la lista de numeros
+                        ldrb r2, [r1]                   @ R2: La posicion del ultimo numero que fue escrito en listaNumerosY$
+                        ldr r1, =listaNumerosYaElegidos
+
+                        strb r0, [r1, r2]               @ Escribo el numero aleatorio de R0 en la ultima posicion de listaNumerosYaElegidos (es decir, hace 'append' a la lista de numeros ya elegidos)
+                        add r2, #1                      @ Añado 1 al indice de la ultima posicion escrita
+                        cmp r2, #0x10                   @ Si la ultima posicion que queda por escribir es 17, ya escribi todos los numeros posibles para elegir
+
+                        beq ganaste                     @ Si llegue al final de la lista, ya gane el juego, no quedan palabras para adivinar
+
+                        ldr r1, =posicion               @ Si no llegue al final del juego, guardo cual es el indice del ultimo numero grabado en listaNumerosYaElegidos
+                        strb r2, [r1]
+
+                pop {r4}
+                pop {r3}
+                pop {r2}
+                pop {r1}
+                pop {r0}
+                pop {lr}
+                bx lr
+            .fnend
 
 
 /*      ->verificarPalabraCorrecta(){}
@@ -1089,9 +1131,8 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        imprimirPantallaGenerico:               /*Imprime lo que sea que se le pase como parametros.
-                                                PARAMETROS: R2 la longitud de una palabra a impirmir
-                                                R1 la direccion de memoria de la palabra a imprimir*/
+        imprimirPantallaGenerico:       /*Imprime lo que sea que se le pase como parametros.
+                                        PARAMETROS:*R2: la longitud de una palabra a impirmir *R1: la direccion de memoria de la palabra a imprimir*/
                 .fnstart
                         push {r7}
                         push {r0}
@@ -1378,7 +1419,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaPalabraCorrecta:/*Muestra la pantalla de que se gano la partida, con el ahorcado sin la horca, y pregunta al usuario si desea continuar*/
+        mostrarPantallaPalabraCorrecta:/*Muestra la pantalla mostrando que se gano la partida, con el ahorcado sin la horca, y pregunta al usuario si desea continuar*/
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1412,7 +1453,7 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
         main:
                 bl cargarPalabrasTxt                            @Carga las palabras por adivinar deltxt a memoria
                 bl cargarTopTxt                                 @Carga los nombres del ranking.txt en memoria
-                @bl limpiarbasuratop                             @Limpia la pantalla del top para la partida que esta por comenzar
+                @bl limpiarbasuratop                            @Limpia la pantalla del top para la partida que esta por comenzar
                 bl cargarTop                                    @Carga los datos para la partida que esta por comenzar
 
                 bl mostrarPantallaInicio
@@ -1429,7 +1470,6 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 bl actualizarRankingTxt                         @Si el usuario sale se guarda su nombre
                 mainjuego:
                 bl cargarPuntaje
-                @mov r0,#42
                 bl myrand
                 bl seleccionarPalabra
                 bl censurarPalabra
@@ -1531,7 +1571,11 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
         ldr r1, =errorAlAbrirArchivo
 
         finjuego:
-                @bl actualizarRankingTxt                                @Si el usuario sale se guarda su nombre
                 bl mostrarDespedida
                 mov r7,#1
+                swi 0
+
+        ganaste:
+                bl mostrarDespedida
+                mov r7, #1
                 swi 0
