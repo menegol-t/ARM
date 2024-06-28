@@ -1,3 +1,13 @@
+/*      -> AHORCADO V2.1 <-                                                                                                     |
+|                                                                                                                               |
+|       Aplicacion desarrollada para el TP-Final de Organizacion Del Computador 1 - en la Universidad Nacional General Sarmiento|
+|       Se nos solicito desarrolar el juego clasico "Ahorcado" en lenguaje ensamblador para la arquitectura ARM.                |
+|       Utilizando los conseptos adquiridos durante la cursada (1-2024) logramos finalizar el trabajo practico con exito        |
+|           Alumnos:                                                                                                            |
+|                  -Alan Rodriguez                                                                                              |
+|                  -Tomas Menegol                                                                                               |
+|                                                                                                                               */
+
 .data
         seed:                   .word 1
         const1:                 .word 1103515245
@@ -414,7 +424,8 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 |        Abre rankingTxt y reemplaa su contenido por el de nuevoRanking, que elimina el nombre mas viejo y                      |
 |        añade el nombreJugador (el ultimo jugador)                                                                             |
 |                                                                                                                               |
-|               -Llama a subrutina: actualizarRanking                                                                           |
+|        Llama a subrutina: actualizarRanking                                                                                   |
+|        Recibe: rankingTxt, diccionarioDeNombres, nuevoRanking                                                                 |
 |                                                                                                                               */
         actualizarRankingTxt:
         .fnstart
@@ -456,11 +467,13 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 bx lr
         .fnend
 
-
 /*      ->cargarPalabrasTxt(){}                                                                                                 |
 |                                                                                                                               |
 |       Obtiene en memoria el diccionario de palabras que se encuentran almacenado en un archivo.                               |
 |       Almacena las palabras en memoria bajo la etiqueta diccionarioPalabras                                                   |
+|                                                                                                                               |
+|       Recibe: palabrasTxt, diccionarioPalabras                                                                                |
+|       Retorna: diccionarioPalabras (actualizado)                                                                              |
 |                                                                                                                               */
         cargarPalabrasTxt:
                 .fnstart
@@ -491,7 +504,9 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 /*      ->cargarTopTxt(){}                                                                                                      |
 |                                                                                                                               |
 |       Lee el archivo ranking.txt y guarda su contenido en memoria, que son los nombre de los ultimos 3 jugadores              |
-|               -lo almacena en la etiqueta topjugadores                                                                        |
+|                                                                                                                               |
+|       Recibe: topTxt, topjugadores                                                                                            |
+|       Retorna: topjugadores (actualizado)                                                                                     |
 |                                                                                                                               */
         cargarTopTxt:
                 .fnstart
@@ -517,7 +532,6 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
 
                         bx lr
                 .fnend
-
 
 /*      ->seleccionarPalabra(){}                                                                                                |
 |                                                                                                                               |
@@ -675,9 +689,16 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-
-
-        cargarTop:      /*Carga el ranking de los jugadores en la pantalla*/
+/*      -> cargarTop(){}                                                                                                        |
+|                                                                                                                               |
+|       Esta subrutina se encarga de preparar la pantalla que se mostra con los ultimos tres jugadores.                         |
+|       Toma desde topjugadores que previamente debe cargarse con los jugadores desde un archivo y lo carga en el asciiArt      |
+|       pantallaTop.                                                                                                            |
+|                                                                                                                               |
+|       -Recibe: topjugadores                                                                                                   |
+|       -Devuelve: pantallaTop (actualizado)                                                                                    |
+|                                                                                                                               */
+        cargarTop:
                 .fnstart
                         push {r0}
                         push {r1}
@@ -717,44 +738,16 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        limpiarbasuratop:       /*Limpia lo que tiene escrito la pantalla con el ranking de los jugadores, y escribe el ranking mas actualizado de memoria. */
-                .fnstart
-                        push {r0}
-                        push {r1}
-                        push {r4}
-                        push {r5}
-                        push {r7}
-                        mov r7,#1018                            @Offset de donde comenzar a escribir
-                        mov r4,#0                               @iterador
-                        mov r5,#0
-                        ciclobasura:
-                                cmp r5,#60                      @Final de limpieza
-                                beq finlimpieza
-
-                                cmp r4,#20                      @Termina la limpieza de la linea
-                                beq sumolinea                   @offset +82
-
-                                ldr r0,=pantallaTop
-                                add r0,r7                       @Estoy parado donde quiero
-                                mov r1,#0x20
-                                strb r1,[r0,r4]                 @Comienzo a escribir
-                                add r4,#1
-                                add r5,#1
-                                bal ciclobasura
-                        sumolinea:
-                                mov r4,#0                       @R4: itera en top en memoria, entonces lo incremento
-                                add r7,#82
-                                bal ciclobasura
-                        finlimpieza:
-                                pop {r7}
-                                pop {r5}
-                                pop {r4}
-                                pop {r1}
-                                pop {r0}
-                                bx lr
-                .fnend
-
-        verificarDisparo:   /*Retorna R8 = 1 si disparo correcto do en el objetivo.  R8 = 0 si disparo fallo*/
+/*      -> verificarDisparo(){}                                                                                                |
+|                                                                                                                               |
+|       Esta subrutina se encarga de verificar si las coordenadas ingresadas por el usuario son las correctas.                  |
+|       Estas coordenadas estan harcodeadas en memoria, entonces solo se verifica si las ingresadas por el usuarios estan       |
+|       contenidas. Se debe retornar si las coordenadas son correctas o no                                                      |
+|                                                                                                                               |
+|       -Recibe: coordenadascuerdax, coordenadascuerday, coordenadax, coordenaday                                               |
+|       -Devuelve: R8 = 1 disparo correcto, R8 = 0 disparo fallido                                                              |
+|                                                                                                                               */
+        verificarDisparo:
                 .fnstart
                         push {r0}                       @Salvamos el valor de los registros por si se estaban usando
                         push {r1}
@@ -807,7 +800,16 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr                   @Devuelvo los registros como estaban antes de salir, por si acaso.
                 .fnend
 
-        modificarPalabraCensurada:  /*Va 'des-censurando' la palabra censurada, si la letra en 'input' es igual a alguna letra de la palabra por adivinar.*/
+/*      -> modificarPalabraCensurada(){}                                                                                        |
+|                                                                                                                               |
+|       Esta subrutina se encarga de ir 'mostrando' los caracteres ocultos, previamente se verifica si el caracter ingresado es |
+|       valido. Se debe consideara que la palabra oculta es un espejo de la palabra original, entonces si el caracter ingresado |
+|       es valido se recorre la palabra original buscando sus apariciones y se las setea en la palabra censurada/oculta.        |
+|                                                                                                                               |
+|       -Recibe: input, palabraOriginal, palabraCensurada                                                                       |
+|       -Devuelve: palabraCensurada (actualizado)                                                                               |
+|                                                                                                                               */
+        modificarPalabraCensurada:
                 .fnstart
                         push {r0}
                         push {r1}
@@ -844,7 +846,16 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        descontarPuntajeMemoria:  /*Resta 1 a puntajeString en memoria*/
+/*      -> descontarPuntajeMemoria(){}                                                                                          |
+|                                                                                                                               |
+|       Esta subrutina se encarga de actualizar en memoria el puntaje/intentos disponibles del usuario                          |
+|       Cada vez que se invoca esta subrutina :                                                                                 |
+|       puntajeString = puntajeString - 1                                                                                       |
+|                                                                                                                               |
+|       -Recibe: puntajeString                                                                                                  |
+|       -Devuelve: puntajeString (actualiado)                                                                                   |
+|                                                                                                                               */
+        descontarPuntajeMemoria:
                 .fnstart
                         push {r0}
                         push {r1}
@@ -859,7 +870,16 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarCaracter:        /*Hace syscall para tomar un input y lo guarda en input, usado para la letra que mete el usuario */
+/*      -> ingresarCaracter(){}                                                                                                 |
+|                                                                                                                               |
+|       Esta subrutina realiza un syscall para tomar un input y lo almacena en memoria. El input realizado es de un caracter,   |
+|       considerando el enter para evitar eco.                                                                                  |
+|       Se realiza el llamado a una subrutina auxiliar encargada de transformar el caracter en minuscula                        |
+|                                                                                                                               |
+|       -Recibe: Interrupcion => Leer por teclado                                                                               |
+|       -Devuelve: input (actualizado)                                                                                          |
+|                                                                                                                               */
+        ingresarCaracter:
                 .fnstart
                         push {r7}
                         push {r0}
@@ -882,6 +902,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
+/*      -> transformarMinuscula(){}                                                                                             |
+|                                                                                                                               |
+|       Es una subrutina auxiliar encargada de transformar el ascii ingresado por el usuario en minuscula, solo si este es una  |
+|       letra mayuscula.                                                                                                        |
+|                                                                                                                               |
+|       -Recibe: input                                                                                                          |
+|       -Devuelve: input (actualizado)                                                                                          |
+|                                                                                                                               */
         transformarMinuscula:
                 .fnstart
                         push {r0}
@@ -914,6 +942,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
+/*      -> ingresarCoordenadaX(){}                                                                                              |
+|                                                                                                                               |
+|       Esta subrutina realiza un syscall para que el usuario ingrese una coordenada x, que sera utilizada para el disparo de   |
+|       la 'segunda parte'.                                                                                                     |
+|                                                                                                                               |
+|       -Realiza: Interrupcion => Leer por teclado                                                                              |
+|       -Devuelve: coordenadax (actualizado)                                                                                    |
+|                                                                                                                               */
         ingresarCoordenadaX:     /*Hace syscall para tomar un input y lo guarda en coordenadaX*/
                 .fnstart
                         push {r7}
@@ -934,7 +970,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarCoordenadaY:     /*Hace la syscall para tomar un input y lo guarda en coordenadaY*/
+/*      -> ingresarCoordenadaY(){}                                                                                              |
+|                                                                                                                               |
+|       Esta subrutina realiza un syscall para que el usuario ingrese una coordenada y, que sera utilizada para el disparo de   |
+|       la 'segunda parte'.                                                                                                     |
+|                                                                                                                               |
+|       -Realiza: Interrupcion => Leer por teclado                                                                              |
+|       -Devuelve: coordenaday (actualizado)                                                                                    |
+|                                                                                                                               */
+        ingresarCoordenadaY:
                 .fnstart
                         push {r7}
                         push {r0}
@@ -954,7 +998,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        ingresarNombre:          /*Hace la syscall para tomar un input y guarda el nombre en nombreJugador*/
+/*      -> ingresarNombre(){}                                                                                                   |
+|                                                                                                                               |
+|       Esta subrutina realiza un syscall para que el usuario ingrese su nombre, que sera utilizada para ranking/top            |
+|                                                                                                                               |
+|       -Realiza: Interrupcion => Leer por teclado                                                                              |
+|       -Devuelve: nombreJugador (actualizado)                                                                                  |
+|                                                                                                                               */
+        ingresarNombre:
                 .fnstart
                         push {r7}
                         push {r0}
@@ -974,9 +1025,17 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        verificarNombreValido:    /* Solo verifica que lo que ingreso el usuario como nombreJugador en la funcion de arriba no sea completamente vacio*/
+/*      -> verificarNombreValido(){}                                                                                            |
+|                                                                                                                               |
+|       Esta subrutina se encarga de verificar que el usuario no ingrese el campo del nombre vacio presionando el enter sin     |
+|       cargar ningun nombre.                                                                                                   |
+|                                                                                                                               |
+|       -Realiza: Interrupcion => Leer por teclado                                                                              |
+|       -Recibe: nombreJugador
+|       -Devuelve: nombreJugador (actualizado/valido)                                                                           |
+|                                                                                                                               */
+        verificarNombreValido:
                 .fnstart
-
                         push {r0}
                         push {r1}
                         verificarnombre:
@@ -997,7 +1056,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        verificarQueSeaX:                               /* Verifica que el input sea 'x'*/
+/*      -> verificarQueSeaX(){}                                                                                                 |
+|                                                                                                                               |
+|       Esta subrutina se encarga de verificar que el caracter ingresado por el usuario se 'x' para fines de avanzar en el juego|
+|       la 'segunda parte'.                                                                                                     |
+|                                                                                                                               |
+|       -Recibe: input                                                                                                          |
+|       -ATENCION: en caso de no ser x, se realiza un salto al fin del juego                                                    |
+|                                                                                                                               */
+        verificarQueSeaX:
                 .fnstart
                         push {r0}
                         push {r1}
@@ -1015,8 +1082,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        letraContenidaEnPalabra:                        /*Retorna R8 = 1 si la letra que ingreso el usuario se encuentra en la palabra. Caso contrario
-                                                        Retorna R8 = 0*/
+/*      -> letraContenidaEnPalabra(){}                                                                                          |
+|                                                                                                                               |
+|       Esta subrutina se encarga de verificar si el caracter ingresado por el usuario esta contenido en la palabra original    |
+|                                                                                                                               |
+|       -Recibe: input, palabraOriginal                                                                                         |
+|       -Devuelve: R8 = 1 si la letra esta contenida, R8 = 0 si la letra no esta contenida                                      |
+|                                                                                                                               */
+        letraContenidaEnPalabra:
                 .fnstart
                         mov r4,#0                       @Contador
                         ldr r0,=input
@@ -1038,7 +1111,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        censurarPalabra:                                /*Se genera una palabra censurada que solo muestra la primer letra, basada en al palabra original*/
+/*      -> censurarPalabra(){}                                                                                                  |
+|                                                                                                                               |
+|       Esta subrutina se encarga de censurar la palabra original con el caracter '@' dejando visible unicamente el primer      |
+|       caracter 'visible'. Almacenando esta nueva palabra ya censurada en memoria.                                             |
+|                                                                                                                               |
+|       -Recibe: palabraOriginal                                                                                                |
+|       -Devuelve: palabraCensurada (actualiado)                                                                                |
+|                                                                                                                               */
+        censurarPalabra:
                 .fnstart
                         push {r0}
                         push {r1}
@@ -1073,7 +1154,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        actualizarPalabraCensurada:                     /*Esta subrutina actualiza la palabra censurada en pantalla*/
+/*      -> actualizarPalabraCensurada(){}                                                                                       |
+|                                                                                                                               |
+|       Esta subrutina se encarga de actualizar el asciiArt que muestra la palabra censurada. Actualiza la palabra censurada    |
+|       caracter por caracter dada la posicion del asciiArt de  donde comenzar.                                                 |
+|                                                                                                                               |
+|       -Recibe: palabraCensurada, piedepantalla                                                                                |
+|       -Devuelve: piedepantalla (actualiado)                                                                                   |
+|                                                                                                                               */
+        actualizarPalabraCensurada:
                 .fnstart
                         push {r0}
                         push {r4}
@@ -1102,7 +1191,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
-        actualizarPuntaje:                              /*Esta subrutina actualiza el puntaje en pantalla, mas o menos misma logica que arriba*/
+/*      -> actualizarPuntaje(){}                                                                                                |
+|                                                                                                                               |
+|       Esta subrutina se encarga de actualizar el asciiArt que muestra el puntaje del jugador. Actualiza el puntaje caracter   |
+|       por caracter dada la posicion del asciiArt de  donde comenzar.                                                          |
+|                                                                                                                               |
+|       -Recibe: puntajestring, piedepantalla                                                                                |
+|       -Devuelve: piedepantalla (actualiado)                                                                                   |
+|                                                                                                                               */
+        actualizarPuntaje:
                 .fnstart
                         push {r0}
                         push {r4}
@@ -1131,6 +1228,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                                 bx lr
                 .fnend
 
+/*      -> imprimirPantallaGenerico(){}                                                                                         |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola dado los parametros recibidos por los registros R1 y R2               |
+|       Es una subrutina auxiliar.                                                                                              |
+|                                                                                                                               |
+|       -Recibe: R2 = la longitud de palabra a imprimir, R1: la direccion de memoria de la palabra a imprimir                   |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
         imprimirPantallaGenerico:       /*Imprime lo que sea que se le pase como parametros.
                                         PARAMETROS:*R2: la longitud de una palabra a impirmir *R1: la direccion de memoria de la palabra a imprimir*/
                 .fnstart
@@ -1146,7 +1251,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaInicio:  /*Imprime la pantalla de inicio, llama a la funcion para imprimir pantallas generica*/
+/*      -> imprimirPantallaInicio(){}                                                                                           |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la pantalla de Inicio                                  |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantallaInicio                                                                                                 |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarPantallaInicio:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1162,7 +1275,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaTop:     /*Llama a la funcion para imprimir pantallas generica, mprime la pantalla con el ranking al comienzo del juego*/
+/*      -> imprimirPantallaTop(){}                                                                                              |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la pantalla de Top/Ranking                             |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantallaTop                                                                                                 |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarPantallaTop:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1178,7 +1299,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaNombre:  /*Muestra la pantalla que solicita el nombre al usuario*/
+/*      -> imprimirPantallaNombre(){}                                                                                           |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la pantalla donde el usuario ingresa su nombre         |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantallaNombre                                                                                                 |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarPantallaNombre:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1194,7 +1323,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPrimerPantalla:  /*Imprime primera pantalla del juego, con la horca vacia y la parte donde se solicita una letra al usuario*/
+/*      -> mostrarPrimerPantalla(){}                                                                                            |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la primir pantalla que muestra la horca vacia          |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla0 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarPrimerPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1213,7 +1350,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarSegundaPantalla: /*Imprime la siguiente pantalla, con la cabeza del ahorcado*/
+/*      -> mostrarSegundaPantalla(){}                                                                                           |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la pantalla con la cabeza del ahorcado                 |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla1 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarSegundaPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1232,7 +1377,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarTercerPantalla: /*Imprime la siguiente pantalla con el torso del ahorcado */
+/*      -> mostrarTercerPantalla(){}                                                                                            |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la pantalla que muestra la cabeza y el torso           |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla2 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarTercerPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1251,7 +1404,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarCuartaPantalla:/*Imprime la siguiente pantalla con un brazo del ahorcado*/
+/*      -> mostrarCuartaPantalla(){}                                                                                            |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de pantalla que muestra cabeza, dorso y un brazo          |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla3 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarCuartaPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1270,7 +1431,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarQuintaPantalla:/*Imprime la siguiente pantalla con los dos brazos del ahorcado*/
+/*      -> mostrarQuintaPantalla(){}                                                                                            |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de pantalla que muestra cabeza,dorso y los brazos         |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla4 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarQuintaPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1289,7 +1458,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarSextaPantalla:/*Imprime la siguiente pantalla con casi todo el ahorcado excepto una pierna*/
+/*      -> mostrarSextaPantalla(){}                                                                                             |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de pantalla que muestra cabeza,dorso,brazos y una pierna  |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla5 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarSextaPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1308,7 +1485,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarSeptimaPantalla:/*Muestra el ahorcado terminado, y el footer que indica que todavia hay una oportunidad extra (el disparo)*/
+/*      -> mostrarSeptimaPantalla(){}                                                                                           |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt ahorcado completo, con footer 2da parte(disparo)          |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla6 , piedepantalla                                                                                      |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarSeptimaPantalla:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1327,7 +1512,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaSegundaParte1:/*Continua mostrando el ahorcado pero ahora con un footer que solicita la cordenada X de la soga*/
+/*      -> mostrarPantallaSegundaParte1(){}                                                                                     |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de 2parte, solicitando coordenada x                       |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla6 , piecordex                                                                                          |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarPantallaSegundaParte1:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1346,7 +1539,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarPantallaSegundaParte2:/*Misma funcion que arriba pero con la coordenada Y*/
+/*      -> mostrarPantallaSegundaParte2(){}                                                                                     |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de la 2da parte solicitando coordenada y                  |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla6 , piecordey                                                                                          |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarPantallaSegundaParte2:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1365,7 +1566,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarDisparoCorrecto:/*muestra un footer que indica "disparo acertado" y el ahorcado sin la horca*/
+/*      -> mostrarDisparoCorrecto(){}                                                                                           |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt de personaje sin horca y un mensaje "disparo correcto"    |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantallaSinHorca , pieDisparoCorrecto                                                                          |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarDisparoCorrecto:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1384,7 +1593,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarDisparoFallido:/*Muestra el ahorcado muerto y el footer que indca que se fallo el disparo*/
+/*      -> mostrarDisparoFallido(){}                                                                                            |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt del cuerpo en la horca y mensaje "disparo fallido"        |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantalla6 , pieFallasteDisparo                                                                                 |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarDisparoFallido:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1403,7 +1620,15 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        mostrarDespedida:/*Muestra la pantalla de despedida*/
+/*      -> mostrarDespedida(){}                                                                                                 |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt del mensaje de despedida cuando se sale del juego         |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantallaDespedida                                                                                              |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
+        mostrarDespedida:
                 .fnstart
                         push {r2}
                         push {r1}
@@ -1419,6 +1644,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
+/*      -> mostrarPalabraCorrecta(){}                                                                                           |
+|                                                                                                                               |
+|       Esta subrutina se encarga de imprimir por consola el asciiArt del personaje sin la horca y un mensaje "desea continuar" |
+|       Se utiliza la subrutina auxiliar imprimirPantallaGenerico()                                                             |
+|                                                                                                                               |
+|       -Recibe: pantallaSinHorca , felicitaciones                                                                              |
+|       -Realiza: Interrupcion => Salida por consola                                                                            |
+|                                                                                                                               */
         mostrarPantallaPalabraCorrecta:/*Muestra la pantalla mostrando que se gano la partida, con el ahorcado sin la horca, y pregunta al usuario si desea continuar*/
                 .fnstart
                         push {r2}
@@ -1438,7 +1671,14 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         bx lr
                 .fnend
 
-        cargarPuntaje:/*Setea el puntaje en memoria como el ASCII del numero 6 para mostrarlo en pantalla y para llevar la cuenta de los puntos */
+/*      -> resetPuntaje(){}                                                                                                     |
+|                                                                                                                               |
+|       Esta subrutina se encarga de resetear el puntaje a 6 en memoria, para continuar jugando                                 |
+|                                                                                                                               |
+|       -Recibe: puntajestring                                                                                                  |
+|       -Retorna: puntajestring = 6                                                                                             |
+|                                                                                                                               */
+        resetPuntaje:
                 .fnstart
                         push {r0}
 
@@ -1449,11 +1689,19 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                         pop {r0}
                         bx lr
                 .fnend
+
+        cargarSeed:
+                .fnstart
+                        ldr r0, =nombreJugador
+                        ldrb r1, [r0]
+                        ldr r0, =seed
+                        strb r1, [r0]                           @Para generar la seed agarramos la primera letra del nombre del jugador.
+                        bx lr
+                .fnend
 .global main
         main:
                 bl cargarPalabrasTxt                            @Carga las palabras por adivinar deltxt a memoria
                 bl cargarTopTxt                                 @Carga los nombres del ranking.txt en memoria
-                @bl limpiarbasuratop                            @Limpia la pantalla del top para la partida que esta por comenzar
                 bl cargarTop                                    @Carga los datos para la partida que esta por comenzar
 
                 bl mostrarPantallaInicio
@@ -1468,8 +1716,9 @@ pieDisparoCorrecto:     .asciz "|+----------------------------DISPARO ACERTADO!-
                 bl ingresarNombre                               @Pido al usuario que ponga su nombre
                 bl verificarNombreValido                        @Verificar que el usuario no ponga su nombre vacio.
                 bl actualizarRankingTxt                         @Si el usuario sale se guarda su nombre
+                bl cargarSeed                                   @Elige una seed para utilizar en la funcion myrand
                 mainjuego:
-                bl cargarPuntaje
+                bl resetPuntaje
                 bl myrand
                 bl seleccionarPalabra
                 bl censurarPalabra
